@@ -42,21 +42,20 @@ func init() {
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	go func() {
-		duration := gracefulShutdownTimeoutDefault
-		if tmp := viper.New().GetDuration(gracefulShutdownTimeoutENV); tmp > time.Second {
-			duration = tmp
-		}
-		<-c
-		wgShuttingDown.Done()
-		alive.Store(false)
-		time.Sleep(duration)
-		wgIsDown.Done()
-	}()
+	go waitForSignal(c)
+	go http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(healthPORT)), healthHandler{}) //nolint
+}
 
-	go func() {
-		http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(healthPORT)), healthHandler{}) //nolint
-	}()
+func waitForSignal(c chan os.Signal) {
+	duration := gracefulShutdownTimeoutDefault
+	if tmp := viper.New().GetDuration(gracefulShutdownTimeoutENV) * time.Second; tmp > time.Second {
+		duration = tmp
+	}
+	<-c
+	wgShuttingDown.Done()
+	alive.Store(false)
+	time.Sleep(duration)
+	wgIsDown.Done()
 }
 
 type healthHandler struct {
