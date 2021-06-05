@@ -1,8 +1,11 @@
 package graceful_shutdown
 
 import (
+	"fmt"
 	"github.com/spf13/viper"
 	"go.uber.org/atomic"
+	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -10,6 +13,7 @@ import (
 )
 
 const gracefullShutdownTimeoutENV = `GRACEFUL_SHUTDOWN_TIMEOUT`
+const healthPORT = `HEALTH_PORT`
 const gracefullShutdownTimeoutDefault = time.Second * 1
 
 var (
@@ -30,6 +34,9 @@ var (
 )
 
 func init() {
+	if os.Getenv(healthPORT) == `` {
+		log.Println(healthPORT, ` is not set`)
+	}
 	wgIsDown.Add(1)
 	wgShuttingDown.Add(1)
 
@@ -46,4 +53,19 @@ func init() {
 		time.Sleep(duration)
 		wgIsDown.Done()
 	}()
+
+	go func() {
+		http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(healthPORT)), healthHandler{}) //nolint
+	}()
+}
+
+type healthHandler struct {
+}
+
+func (h healthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if !IsAlive() {
+		w.WriteHeader(http.StatusLocked)
+		return
+	}
+	w.Write([]byte(`OK`))
 }
