@@ -14,7 +14,7 @@ import (
 
 const gracefulShutdownTimeoutENV = `GRACEFUL_SHUTDOWN_TIMEOUT`
 const healthPORT = `HEALTH_PORT`
-const gracefulShutdownTimeoutDefault = time.Second * 10
+const gracefulShutdownTimeoutDefault = time.Second * 1
 
 var (
 	wgIsDown       = sync.WaitGroup{}
@@ -48,7 +48,9 @@ func init() {
 
 func waitForSignal(c chan os.Signal) {
 	duration := gracefulShutdownTimeoutDefault
-	if tmp := viper.New().GetDuration(gracefulShutdownTimeoutENV) * time.Second; tmp > time.Second {
+	v := viper.New()
+	v.AutomaticEnv()
+	if tmp := v.GetDuration(gracefulShutdownTimeoutENV) * time.Second; tmp > time.Second {
 		duration = tmp
 	}
 	<-c
