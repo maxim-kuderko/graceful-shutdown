@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"sync"
 	"time"
 )
@@ -41,7 +42,7 @@ func init() {
 	wgShuttingDown.Add(1)
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go waitForSignal(c)
 	go http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv(healthPORT)), healthHandler{}) //nolint
 }
