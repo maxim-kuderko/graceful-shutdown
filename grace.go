@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"go.uber.org/atomic"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -35,9 +34,6 @@ var (
 )
 
 func init() {
-	if os.Getenv(healthPORT) == `` {
-		log.Println(healthPORT, ` is not set`)
-	}
 	wgIsDown.Add(1)
 	wgShuttingDown.Add(1)
 
